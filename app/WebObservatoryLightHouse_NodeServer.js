@@ -2,41 +2,78 @@ var Twit = require('twit')
 var app = require('http').createServer(handler);
 var io = require('socket.io')(app);
 
-app.listen(9001);
+app.listen(9876);
+
+active_WOs = {};
 
 function handler (req, res) {
     res.writeHead(200);
     res.end("");
 }
 
-var T = new Twit({
-    consumer_key:         'xBKmTz61D88R9axzb67LIQ'
-  , consumer_secret:      '4dVqfkB92gam2s9ds2U9Ux9xFJH7Y26HQWNojJwyU'
-  , access_token:         '41944067-tGaOU7HxzbDdGOLm89fT4az6tYQ9q0fFwEwdq1wfh'
-  , access_token_secret:  'X3TvO96cU0P8X45dLyE1VejtbsCh43qMTzcYBssjPQk'
-});
+// Send Heartbreak to all connected clients
+function sendHeartBeat() {
+    io.emit('heartbeat_lighthouse', { heartbeat: true });
+	//console.log("sending heartbeat");
+}
+
+// Interval on heartbreat
+setInterval(sendHeartBeat, 2000);
 
 
+// Send Heartbreak to all connected clients
+function requestDatasetList() {
+    io.emit('dataset_list_request', { heartbeat: true });
+	//console.log("Requesting Dataset List");
+}
 
-T.get('search/tweets', { q: '#webwewantfest', count: 100 }, function(err, data, response) {
-  //console.log(data)
-});
+// Interval on heartbreat
+setInterval(requestDatasetList, 5000);
 
-//var stream = T.stream('statuses/filter', { track: ['webwewantfest', 'webwewant', 'webweshare'] });
-//var stream = T.stream('statuses/filter', { track: ['twitpic', 'http://img', 'img'] });
-var stream = T.stream('statuses/sample');
+
 
 
 
 io.on('connection', function (socket) {
-     io.emit('tweets', { hello: 'world' });
+     io.emit('connected', { message: 'you\'re connected to the Web Observatory Lighthouse'});
+
+	//listen for a pulse from a WO instantiation
+	socket.on('wo_pulse', function (data) {
+
+		 //console.log("got WO Pulse");
+
+		 if(!(data.wo_url in active_WOs)){
+		
+		 	//console.log("Adding newly active WO");
+		 	active_WOs[data.wo_url] = [];
+		
+		 }else{
+		 	//console.log("WO already witnessed");
+		 }
+	     //io.emit('connected', { message: 'you\'re connected to the Web Observatory Lighthouse'});
+	});
+
+
+	//listen for a pulse from a WO instantiation for their dataset
+	socket.on('dataset_list_response', function (data) {
+
+		 //console.log("got WO dataset response");
+		 //console.log("Adding newly active WO");
+		 try{
+		 	if(data.wo_url != undefined){
+		 
+		 		active_WOs[data.wo_url] = data;
+		 		console.log("WO: "+data.wo_url+" Total Datasets: "+data.data.length);
+			}
+		}catch (e){
+
+		}
+	});
+
+
 });
 
-console.log("Emitting Tweets");
 
 
-stream.on('tweet', function (tweet) {
-  //console.log(tweet);
-// emitMsg('tweets', tweet);
-        io.emit('tweets',tweet);
-});
+
+
