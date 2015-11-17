@@ -105,10 +105,10 @@ io.on('connection', function (socket) {
 		 	if(data.wo_url != undefined){
 		 
 		 		active_WOs[data.wo_url] = data;
-		 		console.log("WO: "+data.wo_url
-		 					+" Datasets: "+data.datasets.length
-		 					+" Visualisations: "+data.visualisations.length
-		 					);
+		 		// console.log("WO: "+data.wo_url
+		 		// 			+" Datasets: "+data.datasets.length
+		 		// 			+" Visualisations: "+data.visualisations.length
+		 		// 			);
 			
 		 		// if(updateMongoDatasetList()){
 		 		// 	console.log("updated Mongo with new records");
@@ -153,7 +153,6 @@ io.on('connection', function (socket) {
 
 
 var active_WOs_old = {};
-
 function updateMongoDatasetList(){
 
 	//first drop the collection - really  bad practise...
@@ -167,30 +166,142 @@ function updateMongoDatasetList(){
 	
 // Message = mongoose.model('globalWOListings', woListing); 
 
+	var added = 0;
+	for(key in active_WOs){
 
-		//create document and save
-    var doc = new Message({
-    	  source: "lighthouse",
-          content: JSON.stringify(active_WOs)
-    });
+		//do some manipulation of the keys to make sure the schema.org is removed before inserting
 
-    doc.save(function(err, doc) {
-    if (err) return console.error(err);
-    	return false;
-    });
+		objectToInsert = removeSchemaOrgInKeys(active_WOs[key]);
 
+		//console.log(JSON.stringify(objectToInsert));
+		//console.log("TO INSERT: ",JSON.stringify(active_WOs[key]))
+			//create document and save
+	    var doc = new Message({
+	    	  source: objectToInsert["wo_name"],
+	          content: objectToInsert
+	    });
 
-    console.log("added");
+	    doc.save(function(err, doc) {
+	    if (err) return console.error(err);
+	    	//console.log("KEY  CAUSING ERROR",active_WOs[key])
+	    	return false;
+	    	added = added - 1;
+	    });
+
+	    added = added + 1;
+	}
+
+	console.log("Inserted: ",added);
 
     return true;
-
-
-
 	});
+}
 
-	
+
+datasets_all = {}
+visualisations_all = {}
+
+function removeSchemaOrgInKeys(wo_object){
+
+	datasets_tmp = {}
+	visualisations_tmp = {}
+
+	for(var i=0; i<wo_object.datasets.length; i++){
+		properties = {}
+		for(key in wo_object.datasets[i].properties){
+			try{
+				newKey = key.replace("http://schema.org/","");
+				properties[newKey] = wo_object.datasets[i].properties[key];
+			}catch(e){
+
+			}
+		}
+		wo_object.datasets[i].properties = properties;
+
+		if(wo_object.datasets[i].id in datasets_all){
+
+		}else{
+			datasets_all[wo_object.datasets[i].id] = wo_object.datasets[i]
+			datasets_tmp[wo_object.datasets[i].id] = wo_object.datasets[i]
+		}
+	}
+
+
+	addDatasetsToDatabase(datasets_tmp);
+
+
+	for(var i=0; i<wo_object.visualisations.length; i++){
+		properties = {}
+		for(key in wo_object.visualisations[i].properties){
+			try{
+				newKey = key.replace("http://schema.org/","");
+				properties[newKey] = wo_object.visualisations[i].properties[key];
+			}catch(e){
+
+			}
+		}
+		wo_object.visualisations[i].properties = properties;
+		if(wo_object.datasets[i].id in visualisations_all){
+
+		}else{
+			visualisations_tmp[wo_object.datasets[i].id] = wo_object.datasets[i]
+			visualisations_all[wo_object.datasets[i].id] = wo_object.datasets[i]
+		}
+	}
+
+	addVisualisationsToDatabase(visualisations_tmp);
+
+	return wo_object
 
 }
+
+
+Dataset = mongoose.model('woLighthouseDatasets', woListing); 
+Visualisation = mongoose.model('woLighthouseApplications', woListing); 
+
+
+function addDatasetsToDatabase(datasets){
+
+
+	for(key in datasets){
+
+		var doc = new Dataset({
+		    	  source: key,
+		          content: datasets[key]
+		    });
+
+		doc.save(function(err, doc) {
+	    if (err) return console.error(err);
+	    	//console.log("KEY  CAUSING ERROR",active_WOs[key])
+	    	return false;
+	    });
+
+
+	}
+}
+
+
+function addVisualisationsToDatabase(visualisations){
+
+
+	for(key in visualisations){
+
+		var doc = new Visualisation({
+		    	  source: key,
+		          content: visualisations[key]
+		    });
+
+		doc.save(function(err, doc) {
+	    if (err) return console.error(err);
+	    	//console.log("KEY  CAUSING ERROR",active_WOs[key])
+	    	return false;
+	    });
+
+
+	}
+}
+
+
 
 
   function addStaticObservatoriesList(active_wo_meta){
@@ -225,6 +336,17 @@ function updateMongoDatasetList(){
     }
 
 
+function deleteCollections(){
+
+	Dataset.remove({}, function(err) { 
+	   console.log('Dataset collection removed') 
+	   });
+
+	Visualisation.remove({}, function(err) { 
+	   console.log('Visualisation collection removed') 
+	   });
+}
+
 
 
 //TODO
@@ -244,6 +366,7 @@ function searchForDataByAuthor(){
 }
 
 //kick it off quickly, then set off a timer.
-updateMongoDatasetList()
+updateMongoDatasetList();
+//deleteCollections();
 
-var interval = setInterval(function(){updateMongoDatasetList()}, 60000);
+var interval = setInterval(function(){updateMongoDatasetList()}, 6000);
