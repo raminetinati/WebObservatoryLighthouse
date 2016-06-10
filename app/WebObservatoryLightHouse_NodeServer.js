@@ -2,6 +2,8 @@ var Twit = require('twit')
 var app = require('http').createServer(handler);
 var io = require('socket.io')(app);
 var mongoose = require('mongoose');
+var http = require('http');
+
 
 app.listen(9876);
 
@@ -124,15 +126,22 @@ io.on('connection', function (socket) {
 	socket.on('search_from_web', function (data) {
 		
 		var query_string;
+		var request_type;
 		if(data.search_query != undefined){
 			console.log("Search from web: "+data.search_query);
 			query_string = data.search_query;
+			request_type = data.from_page;
 		}
 
-		if(query_string){
+		if(request_type && query_string){
+			searchLOCCatalogue(query_string);
+			io.emit('search_for_data', query_string);
+
+
+		}
+		else if(query_string){
 			io.emit('search_for_data', query_string);
 			//need to send off some queries to see if there is data listed...
-
 		}
 
 		
@@ -364,6 +373,59 @@ function searchForDataByAuthor(){
 
 
 }
+
+
+function searchLOCCatalogue(keyword){
+
+    var urlPath = encodeURI('/api/search/'+keyword.toLowerCase());
+
+return http.get({
+        host: 'sotonwo.cloudapp.net',
+        port: 4567,
+        path: urlPath
+    }, function(response) {
+        // Continuously update stream with data
+        var body = '';
+        response.on('data', function(d) {
+            body += d;
+        });
+        response.on('end', function() {
+
+            // Data reception is done, do whatever with it!
+            var parsed = JSON.parse(body);
+            //console.log(parsed);
+            if (parsed.length == 0){
+                console.log("NO RESULTS from store");
+            }else{
+
+            	var toSend = []
+            	results = parsed.results
+            	for(key in results){
+
+            		var formattedResult = {};
+            		var properties = {}
+            		result =results[key];
+            		// properties[] = result['@id'];
+            		// properties[] = result['@type'];
+            		properties['http://schema.org/description'] = result['schema:description'];
+            		properties['http://schema.org/name'] = result['schema:name'];
+            		properties['http://schema.org/url'] = result['schema:url'];
+            		properties['http://schema.org/provider'] = result['schema:provider'];
+
+            		formattedResult['properties'] = properties;
+            		toSend.push(formattedResult);
+            	}
+
+
+   				io.emit('search_results_for_web', toSend);
+            }
+
+
+        });
+    });
+}
+
+
 
 //kick it off quickly, then set off a timer.
 updateMongoDatasetList();
