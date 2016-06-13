@@ -317,28 +317,28 @@ function addVisualisationsToDatabase(visualisations){
 
       //RPI
       key = 'https://logd.tw.rpi.edu/web_observatory';
-      obj = {'wo_name':'RPI Web Observatory', 'dataset_count': '-', 'vis_count': '-'};
+      obj = {'wo_name':'RPI Web Observatory', 'dataset_count': 'tba', 'vis_count': 'tba'};
       active_wo_meta[key] = obj;
 
 
       //Indiana
       key = 'http://truthy.indiana.edu/';
-      obj = {'wo_name':'Indiana University Truthy', 'dataset_count': '-', 'vis_count': '-'};
+      obj = {'wo_name':'Indiana University Truthy', 'dataset_count': 'tba', 'vis_count': 'tba'};
       active_wo_meta[key] = obj;
 
       //Singapore
       key = 'http://www.nextcenter.org/';
-      obj = {'wo_name':'National University of Singapore NeXT Observatory', 'dataset_count': '-', 'vis_count': '-'};
+      obj = {'wo_name':'National University of Singapore NeXT Observatory', 'dataset_count': 'tba', 'vis_count': 'tba'};
       active_wo_meta[key] = obj;
 
       //Cardiff
       key = 'http://www.cs.cf.ac.uk/cosmos/';
-      obj = {'wo_name':'COSMOS - Cardiff', 'dataset_count': '-', 'vis_count': '-'};
+      obj = {'wo_name':'COSMOS - Cardiff', 'dataset_count': 'tba', 'vis_count': 'tba'};
       active_wo_meta[key] = obj;
 
        //Cardiff
       key = 'http://sonic.northwestern.edu/';
-      obj = {'wo_name':'SONIC - Northwestern', 'dataset_count': '-', 'vis_count': '-'};
+      obj = {'wo_name':'SONIC - Northwestern', 'dataset_count': 'tba', 'vis_count': 'tba'};
       active_wo_meta[key] = obj;
 
 
